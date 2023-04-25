@@ -2,7 +2,8 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-#define LED_BUILTIN 2
+#define LED_PIN 2
+#define SPEAKER 4
 
 #define READ_PIN_A 18
 #define PULSE_PIN_A 19
@@ -10,10 +11,12 @@
 #define READ_PIN_B 23
 #define PULSE_PIN_B 22
 
+int freq = 4050, t = 126, dly = 230;
+
 const uint32_t  ANALOG_TIMEOUT  = 500;  // = 20ms 20000
 
 uint8_t broadcastAddress[] = {0x40,0x22,0xD8,0x5F,0xF7,0xFC};// mac metalico
-//uint8_t broadcastAddress[] = {0x00,0x00,0x00,0x00,0x00,0x00};
+//uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 
 // Definir a estrutura para o pacote de dados
@@ -21,9 +24,17 @@ typedef struct struct_message {
   int servoA, servoB;
   bool led;
 } struct_message;
-
 // Inicializar a estrutura do pacote de dados
 struct_message myData;
+
+void bipBuzzer(){
+  for(int i=0;i<2;i++){
+    tone(SPEAKER, freq, t);
+    delay(dly);
+    noTone(SPEAKER);
+  }
+  delay(2000);
+}//end bip buzzer
 
 uint8_t analogDigitalRead(const uint8_t Ppin, const uint8_t Rpin) {
   // Envia pulso
@@ -54,16 +65,23 @@ uint8_t analogDigitalRead(const uint8_t Ppin, const uint8_t Rpin) {
 
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t sendStatus) { 
   Serial.println(sendStatus == 0 ? "Entregue":"Não entregue");
-  digitalWrite(LED_BUILTIN, !sendStatus);
+  digitalWrite(LED_PIN, !sendStatus);
 
-  //if(sendStatus == 1)digitalWrite(LED_BUILTIN, HIGH);
+  if(sendStatus == 1)bipBuzzer();
 
 }//end OnDataSent
 
 void setup() {
+  pinMode(SPEAKER, OUTPUT);
+  for(int i=0;i<4;i++){
+    tone(SPEAKER, freq, t);
+    delay(dly);
+    noTone(SPEAKER);
+  }
+
   Serial.begin(115200);
-  pinMode(LED_BUILTIN,OUTPUT);
-  digitalWrite(LED_BUILTIN,LOW);
+  pinMode(LED_PIN,OUTPUT);
+  digitalWrite(LED_PIN,LOW);
 
   pinMode(READ_PIN_A,   INPUT);
   pinMode(PULSE_PIN_A,  OUTPUT);
